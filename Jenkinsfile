@@ -12,7 +12,7 @@ pipeline {
             post {
                 success {
                     script {
-                        sh "git tag -a v2.${BUILD_NUMBER} -m 'Great build' || true"
+                        sh "git tag -a v3.${BUILD_NUMBER} -m 'Great build' || true"
                         
                         // Pousser le tag avec credentials
                         withCredentials([usernamePassword(
