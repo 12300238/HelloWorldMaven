@@ -1,44 +1,33 @@
-pipeline { 
-    agent any 
+pipeline {
+    agent any
+    
     stages {
-        stage('Build') { 
+        stage('###################  Build  #########################') {
             steps {
-                withMaven(maven : 'M3'){
-                        sh "mvn clean compile"
-                }
+                // Get some code from a GitHub repository
+                git 'https://github.com/12300238/HelloWorldMaven.git'
+                // Run Maven on a Unix agent.
+                sh "mvn clean install"
             }
-        }
-        stage('Test'){
-            steps {
-                withMaven(maven : 'M3'){
-                        sh "mvn test"
+            post {
+                success {
+                    script {
+                        sh "git tag -a v2.${BUILD_NUMBER} -m 'Great build' || true"
+                        
+                        // Pousser le tag avec credentials
+                        withCredentials([usernamePassword(
+                            credentialsId: '4aa942a6-ae93-413c-afc5-3cfb0029a962',
+                            usernameVariable: 'GIT_USERNAME',
+                            passwordVariable: 'GIT_PASSWORD'
+                        )]) {
+                            sh """
+                                git config user.email "jenkins@example.com"
+                                git config user.name "Jenkins"
+                                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/12300238/HelloWorldMaven.git --tags
+                            """
+                        }
+                    }
                 }
-
-            }
-        }
-        stage('build && SonarQube analysis') {
-            steps {
-                withSonarQubeEnv('sonar.tools.devops.****') {
-                    sh 'sonar-scanner -Dsonar.projectKey=myProject -Dsonar.sources=./src'
-                }
-            }
-        }
-        stage("Quality Gate") {
-            steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    // Parameter indicates whether to set pipeline to UNSTABLE if Quality Gate fails
-                    // true = set pipeline to UNSTABLE, false = don't
-                    // Requires SonarScanner for Jenkins 2.7+
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-			}
-        stage('Deploy') {
-            steps {
-               withMaven(maven : 'M3'){
-                        sh "mvn deploy"
-                }
-
             }
         }
     }
